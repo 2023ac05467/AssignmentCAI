@@ -41,7 +41,8 @@ safetensors
 huggingface_hub
 datasets
 evaluate
-grok
+groq
+langchain-groq
 
 # Optional (only if you need them)
 pytesseract

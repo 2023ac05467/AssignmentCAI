@@ -9,6 +9,7 @@ import time
 import warnings
 import numpy as np
 import joblib
+from groq import Groq
 
 # ML libs
 import faiss
@@ -61,7 +62,8 @@ def get_hf_token():
     return st.secrets.get("HUGGINGFACE", {}).get("TOKEN", None)
 
 def get_groq_key():
-    return st.secrets.get("GROQ", {}).get("API_KEY", "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")
+    return "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"
+#    return st.secrets.get("GROQ", {}).get("API_KEY", "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")
 
 # =====================================
 # Resource loaders (cached)
