@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline, AutoModelForSeq2SeqLM
 import torch
 import time
 import os
@@ -17,7 +17,7 @@ def load_model():
     hf_token = st.secrets.get("HUGGINGFACE", {}).get("TOKEN", None)
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, use_auth_token=hf_token)
-    model = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForSeq2SeqLM.from_pretrained(
         model_id,
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
         use_auth_token=hf_token
