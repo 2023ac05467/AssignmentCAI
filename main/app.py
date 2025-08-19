@@ -2,9 +2,11 @@
 # Retains all RAG + Fine-Tuned + Groq functionality from Flask.py
 # Deploy this on Streamlit Cloud. Use st.secrets for HF and GROQ tokens.
 
+import os
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
 import streamlit as st
 import json
-import os
 import time
 import warnings
 import numpy as np
