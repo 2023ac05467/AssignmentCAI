@@ -1,0 +1,55 @@
+(wood) during its life cycle. The reporting of these emissions is separate from the mandatory GHG
+Emissions Scope 1.
+GHG Emissions Scope 2 (location- and market-based)
+Scope 2 refers to indirect GHG emissions and is defined as GHG emissions from the consumption of
+"purchased electricity, purchased steam, or other sources of energy generated upstream from the"
+organization. We calculate GHG Emissions Scope 2 following both a location-based and market-based
+"approach. To calculate the GHG Emissions Scope 2 (market-based), we have applied a regional energy"
+attribute certificates (EACs) portfolio approach (see Energy Consumption and Mix above).
+"At SAP, the following emission categories are covered by Scope 2:"
+- Electricity in office buildings: GHG emissions caused by the consumption of purchased
+electricity in office buildings. GHG emissions are calculated based on building electricity
+"consumption. CO e conversion factors are updated annually based on country-specific grid
+2"
+"factors. Where no measured data is available, stable values (kWh/m2) based on the previous"
+year’s energy consumption data are used for extrapolation.
+- Electricity in SAP-owned data centers: GHG emissions caused by the consumption of
+purchased electricity in SAP-owned and -managed data centers. GHG emissions are calculated
+"based on data center electricity consumption (100% data coverage). CO e conversion factors are
+2"
+updated annually based on country-specific grid factors.
+- Electricity in colocation data centers: GHG emissions caused by the consumption of purchased
+electricity in colocation data centers. A colocation is a local computing center whose building
+infrastructure is controlled and managed by an external provider but where SAP has control over
+"the operations of the network and server infrastructure on which SAP software runs. CO e
+2"
+conversion factors are updated annually based on country-specific grid factors. Electricity
+consumption for colocation data centers is calculated based on the consumed IT infrastructure
+"power and a power usage effectiveness (PUE) factor. Where no data is available, average factors"
+are applied.
+- E-mobility: GHG emissions from company cars with electric drivetrains. Electricity consumption is
+"calculated based on the number of electric cars per country, an average energy consumption"
+"value for electric cars, and an average mileage per year. GHG emissions are calculated based on"
+country-specific emission factors.
+"- Purchased chilled and hot water, and steam: GHG emissions caused by the consumption of"
+purchased heat or steam in office buildings (district heating). GHG emissions are calculated
+based on the consumption of district heating. Emission factors are updated annually. Where no
+"measured data is available, stable values (kWh/m2) based on the previous year’s energy"
+consumption data are used for extrapolation.
+"- Home office electricity: Starting in 2024, we will no longer include GHG emissions caused by"
+end-user IT equipment used by SAP employees working from home in our reporting. Compared to
+"SAP’s Total Energy Consumption, the amount of electricity used by our employees working"
+"remotely is insignificant. In addition, SAP has implemented a strict return-to-office policy in 2024,"
+which will reduce the energy consumption and corresponding GHG emissions even further going
+"forward. The change in reporting has no effect on SAP’s net zero target and baseline, since the net-"
+zero target and baseline are market-based and GHG emissions relating to remote work had been
+100% compensated by the purchase of renewable energy certificates.
+GHG Emissions Scope 3 Upstream and Downstream
+"Scope 3 refers to other indirect GHG emissions, which are defined as GHG emissions that are a"
+consequence of the operations of an organization that it does not directly own or control. GHG
+Emissions Scope 3 are divided into Upstream and Downstream emissions.
+GHG Emissions Scope 3 Upstream
+- Business flights: GHG emissions caused by business trips by airplane. These GHG emissions are
+calculated based on actual distance traveled and DEFRA factors. DEFRA adjusted their aviation
+factors to account for reduced load factors as a consequence of the COVID-19 pandemic. Since
+"the load factors in 2024 are almost back to pre-COVID level, we used the factor from the previous"

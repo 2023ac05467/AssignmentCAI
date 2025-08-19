@@ -1,0 +1,45 @@
+# Core
+streamlit
+requests
+python-dotenv
+numpy
+pandas
+
+# LangChain & related
+langchain
+langchain-community
+langchain-ollama
+langchain-openai
+langchain-huggingface
+langchain-experimental
+langchain-text-splitters
+
+# Data handling & parsing
+pypdf
+pymupdf
+pdfplumber
+bs4
+json-repair
+
+# NLP
+nltk
+spacy
+tiktoken
+sentence-transformers
+
+# Vector DBs
+faiss-cpu
+chromadb
+cassandra-driver
+neo4j
+
+# Hugging Face / Transformers
+torch
+safetensors
+huggingface_hub
+datasets
+evaluate
+
+# Optional (only if you need them)
+pytesseract
+networkx

@@ -1,0 +1,54 @@
+Conversion Factors
+The calculation of the GHG emissions is based on factors for conversion and extrapolation provided
+"by the International Energy Agency (IEA), US Environmental Protection Agency (EPA), UK Department"
+"for Environment, Food & Rural Affairs (DEFRA), Environment Canada, and the GHG Protocol, as"
+internationally recognized authorities. We also use extrapolation factors based on our own reported
+"data (from previous quarters) to determine an average consumption value per base unit (for example,"
+"liters of fuel per car for fleet vehicles, and electricity consumption per m2 for facilities)."
+"Where relevant, our conversion factors consider CO e for greenhouse gases. Global warming potential
+2"
+factors are based on the Sixth Assessment Report of the Intergovernmental Panel on Climate Change
+"(IPCC). We report all our GHG emissions in CO equivalents, including the impact from CH and N O, in
+2 4 2"
+"our target-relevant Greenhouse Gas Emissions Scope 1 (GHG Emissions Scope 1), Greenhouse Gas"
+"Emissions Scope 2 (location-based) (GHG Emissions (located-based)), Greenhouse Gas Emissions"
+"Scope 2 (market-based) (GHG Emissions (market-based)), Greenhouse Gas Emissions Scope 3"
+Upstream (GHG Emissions Scope 3 Upstream) and Greenhouse Gas Emissions Scope 3 Downstream
+(GHG Emissions Scope 3 Downstream). The emission impact of refrigerants includes
+hydrofluorocarbons (HFCs) only. We review all our emissions and extrapolation factors annually and
+"update them if required. In the current reporting year, sulfur hexafluoride (SF ), perfluorocarbons (PFC),
+6"
+"and nitrogen trifluoride (NF ) emissions are not included in our disclosure, as these gases do not occur
+3"
+in SAP’s operations or value chain activities.
+Methodology and Further Details
+GHG Emissions Scope 1
+Scope 1 refers to direct GHG emissions and is defined as emissions from sources that are owned or
+"controlled by the organization. At SAP, the following areas are covered by Scope 1:"
+- Stationary combustion in facilities: GHG emissions caused by oil or gas combustion of heating
+systems and generators in SAP office buildings and data centers. GHG emissions are calculated
+"based on gas and oil consumption in kilowatt hours (kWh). Where no measured data is available,"
+stable values (kWh/m2) based on the previous year’s stationary combustion consumption data
+"are used for extrapolation. Where no specific information is available, the natural gas reported by"
+local sites is assumed to be at the lower heating value.
+- Refrigerants in facilities: HFC emissions caused by the loss of refrigerants used in cooling
+systems and air conditioning equipment. The emissions are extrapolated based on the number of
+server units in data centers1 and on office space with an air conditioning (A/C) system. All
+refrigerants are assumed to be HFC134a.
+- Mobile combustion from corporate cars: GHG emissions from the combustion of fuel by
+"company cars. In the context of GHG reporting, the term “company car” refers to all cars for which"
+SAP permanently covers the fuel costs. GHG emissions are calculated based on fuel
+"consumption. If detailed fuel data is not available in specific countries, stable values (liters/car)"
+are used for extrapolation based on the number of company cars reported. The stable values for
+extrapolation are based on the previous year’s data.
+- Mobile combustion from corporate jets: GHG emissions caused by business trips with SAP-
+owned or chartered jets. GHG emissions are calculated for SAP’s jets based on actual fuel
+consumption.
+"- Wood pellets: In addition to gas and oil, we use wood pellets to generate thermal heat for our"
+buildings at our headquarters in Walldorf. The GHG emissions from wood pellets for Scope 1 can
+"essentially be neutralized, given that the carbon absorption during the tree’s growth phase"
+"matches the carbon released during combustion. However, to account for all GHG emissions, we"
+include the direct carbon dioxide impact from wood pellet combustion as “outside of scope”
+"GHG emissions. In 2024, this fuel accounted for 0.4 kilotons of GHG emissions, compared to 0.3"
+kilotons in 2023. The carbon dioxide emissions resulting from the combustion of wood pellets are
+categorized as biogenic because the equivalent amount of carbon is absorbed by the biomass

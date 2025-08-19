@@ -1,0 +1,57 @@
+"reporting year to eliminate this effect in our 2024 reporting. In our view, this approach reflects a"
+"more accurate picture of the actual GHG emissions. In a next step, we determine an average"
+"emission factor per euro spent based on short-, medium-, and long-haul flight emission factors."
+"For the CO e calculation, this factor is applied to actual costs for business flights. Emission factors
+2"
+for business flights do not consider the radiative forcing factors (77% data coverage).
+- Rental cars: GHG emissions caused by business trips by rental car. An average emission factor
+from rental cars is calculated based on actual distance traveled and actual costs incurred. This
+average emission factor is used for extrapolation based on the costs (75% data coverage).
+- Train travel: GHG emissions from business trips by train. An average emission factor from train
+travel is calculated based on actual distance traveled and actual costs incurred. This average
+"factor is used for extrapolation based on costs. In Germany, business trips by train are considered"
+"carbon neutral, as they are compensated by 100% green electricity by Deutsche Bahn (39% data"
+coverage).
+- Business trips by private car: GHG emissions from business trips by employee-owned cars and
+company cars without fuel cards. These GHG emissions are calculated based on the distance
+traveled by private car. This activity type does not include trips by company cars with fuel cards
+(100% data coverage).
+- Flexible Mobility: We are also calculating GHG emissions from our Flexible Mobility program.
+Employees taking part in this program receive a monthly mobility budget that they can spend on
+"various means of transportation, such as public transportation, rental cars, and rental bikes. The"
+"CO e resulting from this program is calculated using a spend-based method similar to that
+2"
+described in the Purchased Goods and Services section (100% data coverage).
+- Employee commuting: GHG emissions caused by commuting between home and work at an
+"SAP office location, considering all modes of transportation, and excluding commutes by"
+"company car. To collect the data, we conduct an SAP-global, Qualtrics-based commuting survey"
+about the distance to work and the mode of transportation used. The last survey was conducted
+"in 2022, and we received approximately 30,000 valid responses, which are the basis for our GHG"
+calculation of employee commuting in 2024. Commuting data for non-responding employees and
+"for quarterly updates is extrapolated based on the number of FTEs, excluding those employees"
+who drive a company car (28% data coverage).
+- Purchased goods and services: This category includes all significant cradle-to-gate upstream
+emissions from goods and services that SAP purchased during the reporting period. We also
+"include services from waste and water disposal in this category. In addition, it contains the"
+"services from our hyperscale providers, fuel- and energy-related activities, and upstream"
+transportation and distribution. SAP includes all significant cradle-to-gate emissions for its net-
+"zero 2030 target. Therefore, we apply a different calculation method for all purchased goods and"
+"services. To derive the CO e values, SAP closely collaborates with a third-party provider that
+2"
+utilizes a spend-based method. We use coefficients that translate each US$ of spend into
+"kilograms of CO e. The coefficients are available for each country-sector combination and by
+2"
+"supply chain tier (direct suppliers, suppliers of suppliers, and so on) (100% data coverage)."
+"- Capital goods: Includes all cradle-to-gate upstream emissions of purchased capital goods, such"
+"as buildings, data center and IT equipment, and cars (100% data coverage)."
+GHG Emissions Scope 3 Downstream
+- Use of sold products: A major part of our overall GHG emissions stems from the use of our
+software (customers running SAP solutions on their hardware and premises). The estimated
+energy consumption is extrapolated globally based on the number of productive installations and
+"average regional PUEs at year-end, derived from SAP’s managed colocations. For systems without"
+"maintenance contracts, SAP has no transparency on whether the solutions are still in use."
+"Therefore, we only consider on-premise solutions with active maintenance contracts. This way, we"
+"ensure that only active, still functional software products are included in the calculation (100%"
+data coverage).
+GHG emissions are calculated using a global electricity emission factor. The calculation covers all our
+"major solutions, including on-premise software. Cloud solutions are not included, as they are part of"
