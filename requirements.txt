@@ -2,8 +2,9 @@
 streamlit
 requests
 python-dotenv
-numpy
-pandas
+numpy==1.26.2
+pandas==2.2.2
+pyarrow==14.0.2
 
 # LangChain & related
 langchain
