@@ -26,6 +26,8 @@ nltk
 spacy
 tiktoken
 sentence-transformers
+transformers
+
 
 # Vector DBs
 faiss-cpu
@@ -39,6 +41,7 @@ safetensors
 huggingface_hub
 datasets
 evaluate
+grok
 
 # Optional (only if you need them)
 pytesseract
