@@ -26,12 +26,6 @@ from transformers import (
 import torch
 import requests
 
-# Try import Groq SDK (may not be installed); handle gracefully
-try:
-    from groq_client import Groq  # hypothetical package name: adjust if different
-except Exception:
-    Groq = None
-
 warnings.filterwarnings("ignore", message="resource_tracker: There appear to be")
 
 # ===========================
