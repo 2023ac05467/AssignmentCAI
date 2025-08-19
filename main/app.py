@@ -301,7 +301,7 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
     except Exception as e:
         return f"Local generation error: {e}", False
 
-def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.1-70b-versatile", max_tokens=256, temperature=0.1):
+def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-70b-versatile", max_tokens=256, temperature=0.1):
     """Use Groq client if available."""
     client = groq_client
     if client is None:
