@@ -11,7 +11,7 @@ st.title("RAG & Fine-Tuned QA Interface (No Flask)")
 # ------------------------
 @st.cache_resource
 def load_model():
-    model_id = "2023ac05467/my-safetensors-model"
+    model_id = "pkwilp/my-safetensors-model"
 
     # Get token from Streamlit secrets (if private)
     hf_token = st.secrets.get("HUGGINGFACE", {}).get("TOKEN", None)
