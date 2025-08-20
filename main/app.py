@@ -460,4 +460,5 @@ st.sidebar.markdown("FAISS index:")
 st.sidebar.markdown(f"`{FAISS_INDEX_PATH}`" if faiss_index is not None else "Not loaded")
 st.sidebar.markdown("TF-IDF vectorizer:")
 st.sidebar.markdown(f"`{TFIDF_VECTORIZER_PATH}`" if tfidf_vectorizer is not None else "Not loaded")
-
+st.sidebar.markdown("MEMORY_BANK::")
+st.sidebar.markdown(f"`{MEMORY_BANK_PATH}`" if memory_bank is not None else "Not loaded")
