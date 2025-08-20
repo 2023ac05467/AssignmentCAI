@@ -352,14 +352,14 @@ def is_output_factual(output):
 # =====================================
 # Streamlit UI - Single consolidated interface
 # =====================================
-st.set_page_config(page_title="RAG + Fine-tuned QA (No Flask)", layout="wide")
-st.title("RAG & Fine-Tuned QA Interface (Consolidated)")
+st.set_page_config(page_title="RAG + Fine-tuned QA (No Flask/Deploying to Streamlit Cloud)", layout="wide")
+st.title("RAG & Fine-Tuned QA Interface (CAI Assignment 2 - Group 100)")
 
 # Sidebar controls
 with st.sidebar:
     st.header("Settings")
     mode = st.radio("Mode", ["RAG", "Fine-Tuned"], index=0)
-    use_groq = st.checkbox("Use Groq for generation (if configured)", value=True)
+    use_groq = st.checkbox("Use Groq for generation (if configured)", value=True, disabled = True)
     top_n = st.slider("Top N retrieved chunks", 1, 10, 5)
     alpha = st.slider("Dense/Sparse fusion alpha (dense weight)", 0.0, 1.0, 0.5)
     max_new_tokens = st.number_input("Max generation tokens", min_value=16, max_value=1024, value=256, step=16)
