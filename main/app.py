@@ -358,7 +358,7 @@ st.title("RAG & Fine-Tuned QA Interface (Consolidated)")
 with st.sidebar:
     st.header("Settings")
     mode = st.radio("Mode", ["RAG", "Fine-Tuned"], index=0)
-    use_groq = st.checkbox("Use Groq for generation (if configured)", value=False)
+    use_groq = st.checkbox("Use Groq for generation (if configured)", value=True)
     top_n = st.slider("Top N retrieved chunks", 1, 10, 5)
     alpha = st.slider("Dense/Sparse fusion alpha (dense weight)", 0.0, 1.0, 0.5)
     max_new_tokens = st.number_input("Max generation tokens", min_value=16, max_value=1024, value=256, step=16)
@@ -409,7 +409,8 @@ if submit:
                             combined.append({"id": cid, "chunk": c["chunk"], "score": sc})
 
             # Generate answer
-            if use_groq:
+            #if use_groq:
+            if mode == "RAG":
                 out_text, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
             else:
                 out_text, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
