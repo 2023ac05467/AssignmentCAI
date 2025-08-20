@@ -294,9 +294,9 @@ def load_models():
         tokenizer=tokenizer_ft,
         device=-1
     )
-    print("Fine-tuned model loaded successfully.")
-    print(qa_pipeline_ft("What was SAP's cloud revenue in 2023?", max_new_tokens=64))
-    print("All models loaded successfully.")
+    st.write("Fine-tuned model loaded successfully.")
+    st.write(qa_pipeline_ft("What was SAP's cloud revenue in 2023?", max_new_tokens=64))
+    st.write("All models loaded successfully.")
 
 def ask(user_query, mode):
     valid, reason = is_query_valid(user_query)
