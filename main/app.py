@@ -353,7 +353,8 @@ def is_output_factual(output):
 # Streamlit UI - Single consolidated interface
 # =====================================
 st.set_page_config(page_title="RAG + Fine-tuned QA (No Flask/Deploying to Streamlit Cloud)", layout="wide")
-st.title("RAG & Fine-Tuned QA Interface (CAI Assignment 2 - Group 100)")
+st.title("RAG & Fine-Tuned QA Interface")
+st.subheader("CAI Assignment 2 - Group 100")
 
 # Sidebar controls
 with st.sidebar:
