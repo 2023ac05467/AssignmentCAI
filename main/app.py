@@ -1,55 +1,92 @@
-# app.py -- Consolidated Streamlit app (no Flask)
-# Retains all RAG + Fine-Tuned + Groq functionality from Flask.py
-# Deploy this on Streamlit Cloud. Use st.secrets for HF and GROQ tokens.
-
 import os
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 
 import streamlit as st
-import json
-import time
-import warnings
-import numpy as np
 import joblib
+import faiss
+import json
+import numpy as np
+import torch
+from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoConfig, AutoModelForSeq2SeqLM, AutoModelForCausalLM,pipeline
+import requests
+import warnings
+import time
 from groq import Groq
 
-# ML libs
-import faiss
-from sentence_transformers import SentenceTransformer
-from transformers import (
-    AutoTokenizer,
-    AutoConfig,
-    AutoModelForSeq2SeqLM,
-    AutoModelForCausalLM,
-    pipeline,
-)
-import torch
-import requests
+### ===============================
+### 2. Retrieval-Augmented Generation (RAG) System Implementation
+# Split the cleaned text into chunks suitable for retrieval with at least two chunk sizes (e.g., 100 and 400 tokens).
+# Assign unique IDs and metadata to chunks.
+# 2.2 Embedding & Indexing
 
+# Embed chunks using a small open-source sentence embedding model (e.g., all-MiniLM-L6-v2, E5-small-v2).
+# Build:
+# Dense vector store (e.g., FAISS, ChromaDB).
+# Sparse index (BM25 or TF-IDF) for keyword retrieval.
+# 2.3 Hybrid Retrieval Pipeline
+
+# For each user query:
+# Preprocess (clean, lowercase, stopword removal).
+# Generate query embedding.
+# Retrieve top-N chunks from:
+# Dense retrieval (vector similarity).
+# Sparse retrieval (BM25).
+# Combine results by union or weighted score fusion.
+# 2.4 Advanced RAG Technique (Select One)
+    
+# Memory-Augmented Retrieval
+
+# Supplement retrieval with a persistent memory bank of frequently asked or important Q&A pairs.
+# 2.5 Response Generation
+
+# Use a small, open-source generative model (e.g., DistilGPT2, GPT-2 Small, Llama-2 7B if available).
+# Concatenate retrieved passages and user query as input to generate the final answer.
+# Limit total input tokens to the model context window.
+# 2.6 Guardrail Implementation
+
+# Implement one guardrail:
+# Input-side: Validate queries to filter out irrelevant or harmful inputs.
+# Output-side: Filter or flag hallucinated or non-factual outputs.
+
+torch.set_num_threads(1)
+
+# Prevent tokenizer parallelism deadlocks
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", message="resource_tracker: There appear to be")
 
-# ===========================
-# Config / Paths (edit as needed)
-# ===========================
-# If you moved your finetuned model to Hugging Face, set MODEL_REPO to HF repo id.
-# Otherwise set FINETUNED_MODEL_PATH to local path (not recommended for Streamlit Cloud).
-MODEL_REPO = "pkwilp/my-safetensors-model"  # preferred: HF repo
-FINETUNED_MODEL_PATH = "../ipynb/qa_finetuned_model_saved"  # fallback local path
-
-CHUNKS_PATH = "data/embeddings/chunks.json"     # relative to repo root on Streamlit Cloud
-FAISS_INDEX_PATH = "data/embeddings/faiss_index.idx"
-TFIDF_VECTORIZER_PATH = "data/embeddings/tfidf_vectorizer.joblib"
-MEMORY_BANK_PATH = "data/embeddings/memory_bank.json"
-
-# Retrieval thresholds (tweakable)
-RAG_SCOPE_SIM_THRESHOLD = 0.30
-FT_SCOPE_SIM_THRESHOLD = 0.01
-
-# Guardrails
+# Disable FAISS multithreading conflicts
+faiss.omp_set_num_threads(1)
+RAG_SCOPE_SIM_THRESHOLD = 0.30  # Threshold for similarity in RAG mode
+FT_SCOPE_SIM_THRESHOLD=0.01 # Threshold for similarity in Fine-Tuned mode
+# ===============================
+###2.6 Guardrail Implementation
+# ===============================
 BANNED_WORDS = {'hack', 'attack', 'kill', 'illegal', 'violence'}
 HALLUCINATION_PHRASES = [
     "as an ai", "i do not know", "i'm just a language model", "cannot answer", "no information"
 ]
+
+# Paths
+MODEL_REPO = "pkwilp/my-safetensors-model"  # preferred: HF repo
+FINETUNED_MODEL_PATH = "pkwilp/my-safetensors-model"
+CHUNKS_PATH = 'data/embeddings/chunks.json'
+FAISS_INDEX_PATH = 'data/embeddings/faiss_index.idx'
+TFIDF_VECTORIZER_PATH = 'data/embeddings/tfidf_vectorizer.joblib'
+MEMORY_BANK_PATH = 'data/embeddings/memory_bank.json'
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["GROQ_API_KEY"]="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"
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# ===============================
+# Globals (lazy loaded later)
+embedder = None
+chunks = None
+chunk_ids = None
+faiss_index = None
+tfidf_vectorizer = None
+tfidf_matrix = None
+qa_pipeline_ft = None
 
 # =====================================
 # Helper: Secure tokens from Streamlit secrets
@@ -61,253 +98,126 @@ def get_groq_key():
     return "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"
 #    return st.secrets.get("GROQ", {}).get("API_KEY", "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")
 
-# =====================================
-# Resource loaders (cached)
-# =====================================
-@st.cache_resource(show_spinner=False)
-def load_embedder():
-    return SentenceTransformer("all-MiniLM-L6-v2")
-
-@st.cache_resource(show_spinner=False)
-def load_tfidf_vectorizer(path=TFIDF_VECTORIZER_PATH):
-    if os.path.exists(path):
-        return joblib.load(path)
-    st.warning(f"TF-IDF vectorizer not found at {path}. Sparse retrieval disabled.")
-    return None
-
-@st.cache_resource(show_spinner=False)
-def load_chunks(path=CHUNKS_PATH):
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            chunks = json.load(f)
-        # Expect chunks to be a list of dicts {'id':..., 'chunk':..., 'meta':...}
-        return chunks
-    st.warning(f"Chunks file not found at {path}.")
-    return []
-
-@st.cache_resource(show_spinner=False)
-def load_faiss_index(path=FAISS_INDEX_PATH):
-    if os.path.exists(path):
-        try:
-            idx = faiss.read_index(path)
-            return idx
-        except Exception as e:
-            st.error(f"Failed to read FAISS index at {path}: {e}")
-            return None
-    st.warning(f"FAISS index not found at {path}. Dense retrieval disabled.")
-    return None
-
-@st.cache_resource(show_spinner=False)
-def load_memory_bank(path=MEMORY_BANK_PATH):
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
-
-@st.cache_resource(show_spinner=False)
-def load_finetuned_model(model_repo=MODEL_REPO, local_path=FINETUNED_MODEL_PATH):
-    # Determine whether to use HF repo or local path
-    use_hf = True if model_repo and (not local_path or not os.path.exists(local_path)) else False
-    hf_token = get_hf_token()
-
-    # Choose repo/source
-    source = model_repo if use_hf else local_path
-
-    # Auto-detect config to decide Seq2Seq vs CausalLM
-    try:
-        cfg = AutoConfig.from_pretrained(source, use_auth_token=hf_token if use_hf else None)
-    except Exception as e:
-        st.warning(f"Could not load config from {source}: {e}")
-        cfg = None
-
-    model = None
-    tokenizer = None
-    text_pipe = None
-
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(source, use_auth_token=hf_token if use_hf else None)
-    except Exception as e:
-        st.warning(f"Could not load tokenizer from {source}: {e}")
-
-    try:
-        if cfg is not None and getattr(cfg, "is_encoder_decoder", False):
-            # Seq2Seq (T5, Bart, etc.)
-            model = AutoModelForSeq2SeqLM.from_pretrained(source, use_auth_token=hf_token if use_hf else None)
-            text_pipe = pipeline("text2text-generation", model=model, tokenizer=tokenizer, device=-1)
-        else:
-            # Try causal LM
-            model = AutoModelForCausalLM.from_pretrained(source, use_auth_token=hf_token if use_hf else None)
-            text_pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device=-1)
-    except Exception as e:
-        st.warning(f"Could not load model from {source}: {e}")
-        model = None
-        text_pipe = None
-
-    return {
-        "tokenizer": tokenizer,
-        "model": model,
-        "pipeline": text_pipe,
-        "config": cfg,
-        "source": source,
-    }
-
-@st.cache_resource(show_spinner=False)
-def init_groq_client():
-    key = get_groq_key()
-    if not key:
-        return None
-    if Groq is None:
-        st.warning("Groq SDK not installed; Groq generation disabled.")
-        return None
-    try:
-        client = Groq(api_key=key)
-        return client
-    except Exception as e:
-        st.warning(f"Failed to init Groq client: {e}")
-        return None
-
-# =====================================
-# Load everything (lazy)
-# =====================================
-embedder = load_embedder()
-chunks = load_chunks()
-chunk_ids = [c.get("id") for c in chunks] if chunks else []
-faiss_index = load_faiss_index()
-tfidf_vectorizer = load_tfidf_vectorizer()
-tfidf_matrix = None
-if tfidf_vectorizer and chunks:
-    tfidf_matrix = tfidf_vectorizer.transform([c["chunk"] for c in chunks])
-
-memory_bank = load_memory_bank()
-finetuned = load_finetuned_model()
-hf_pipeline = finetuned.get("pipeline") if finetuned else None
-groq_client = init_groq_client()
-
-# Prevent FAISS/OpenMP multithreading conflicts
-try:
-    faiss.omp_set_num_threads(1)
-except Exception:
-    pass
-
-# =====================================
-# Preprocessing & Memory utilities
-# =====================================
-import re
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-
-def preprocess(text: str) -> str:
-    text = re.sub(r'[^a-zA-Z0-9\s]', ' ', text)
+# ===============================
+# 2.1 Data Processing
+# ===============================
+def preprocess(text):
+    import re
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
     tokens = text.lower().split()
     tokens = [t for t in tokens if t not in ENGLISH_STOP_WORDS]
-    return " ".join(tokens)
+    return ' '.join(tokens)
 
-def load_memory_bank_local():
-    global memory_bank
+# ===============================
+# Memory Bank (    Memory-Augmented Retrieval)
+# ===============================
+def load_memory_bank():
     try:
-        with open(MEMORY_BANK_PATH, "r", encoding="utf-8") as f:
-            memory_bank = json.load(f)
-    except Exception:
-        memory_bank = []
-    return memory_bank
+        with open(MEMORY_BANK_PATH, 'r') as f:
+            return json.load(f)
+    except:
+        return []
 
 def save_to_memory_bank(query, llm_output):
-    mem = load_memory_bank_local()
+    memory_bank = load_memory_bank()
     query_clean = preprocess(query)
-    q_emb = embedder.encode([query_clean])[0].tolist()
-    mem.append({"query": query_clean, "query_emb": q_emb, "llm_output": llm_output})
-    try:
-        os.makedirs(os.path.dirname(MEMORY_BANK_PATH), exist_ok=True)
-        with open(MEMORY_BANK_PATH, "w", encoding="utf-8") as f:
-            json.dump(mem, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        st.warning(f"Could not save memory bank: {e}")
+    query_emb = embedder.encode([query_clean])[0].tolist()
+    memory_bank.append({'query': query_clean, 'query_emb': query_emb, 'llm_output': llm_output})
+    with open(MEMORY_BANK_PATH, 'w') as f:
+        json.dump(memory_bank, f, ensure_ascii=False, indent=2)
 
 def memory_bank_match(query, threshold=0.9):
-    mem = load_memory_bank_local()
-    if not mem:
-        return None
-    q_clean = preprocess(query)
-    q_emb = embedder.encode([q_clean])[0]
-    for item in mem:
-        mem_emb = np.array(item["query_emb"])
-        sim = float(np.dot(q_emb, mem_emb) / (np.linalg.norm(q_emb) * np.linalg.norm(mem_emb) + 1e-8))
+    memory_bank = load_memory_bank()
+    query_clean = preprocess(query)
+    query_emb = embedder.encode([query_clean])[0]
+    for item in memory_bank:
+        mem_emb = np.array(item['query_emb'])
+        sim = np.dot(query_emb, mem_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(mem_emb) + 1e-8)
         if sim > threshold:
-            return item["llm_output"]
+            return item['llm_output']
     return None
 
-# =====================================
-# Retrieval functions
-# =====================================
+# ===============================
+# Retrieval
+## 2.3 Hybrid Retrieval Pipeline
+
+# For each user query:
+# Preprocess (clean, lowercase, stopword removal).
+# Generate query embedding.
+# Retrieve top-N chunks from:
+# Dense retrieval (vector similarity).
+# Sparse retrieval (BM25).
+# Combine results by union or weighted score fusion.
+# ===============================
 def dense_retrieve(query, top_n=5):
-    """Use FAISS index for dense retrieval. Returns list of (id,score)."""
-    if faiss_index is None:
-        return []
-    q_emb = embedder.encode([query], convert_to_numpy=True).astype("float32")
+    q_emb = embedder.encode([query], convert_to_numpy=True).astype('float32')
     D, I = faiss_index.search(q_emb, top_n)
-    results = []
-    for rank, idx in enumerate(I[0]):
-        if idx < 0 or idx >= len(chunks):
-            continue
-        results.append((chunks[idx]["id"], float(D[0][rank])))
-    return results
+    return [(chunk_ids[i], float(D[0][rank])) for rank, i in enumerate(I[0])]
 
 def sparse_retrieve(query, top_n=5):
-    """Use TF-IDF vectorizer for sparse retrieval. Returns list of (id,score)."""
-    if tfidf_vectorizer is None or tfidf_matrix is None:
-        return []
     q_vec = tfidf_vectorizer.transform([query])
     scores = (tfidf_matrix @ q_vec.T).toarray().squeeze()
-    top_idx = np.argsort(scores)[::-1][:top_n]
-    return [(chunks[i]["id"], float(scores[i])) for i in top_idx]
+    import heapq
+    top_idx = heapq.nlargest(top_n, range(len(scores)), scores.take)
+    return [(chunk_ids[i], scores[i]) for i in top_idx]
 
 def combine_results(dense, sparse, top_n=5, alpha=0.5):
-    """Fuse dense & sparse results. Returns list of chunk dicts (top_n)."""
-    score_map = {}
+    scores = {}
     for cid, score in dense:
-        score_map[cid] = score_map.get(cid, 0) + alpha * score
+        scores[cid] = scores.get(cid, 0) + alpha * score
     for cid, score in sparse:
-        score_map[cid] = score_map.get(cid, 0) + (1 - alpha) * score
-    sorted_ids = sorted(score_map.items(), key=lambda x: -x[1])[:top_n]
-    final_chunks = []
-    for cid, sc in sorted_ids:
-        # find chunk object
-        c = next((c for c in chunks if c["id"] == cid), None)
-        if c:
-            final_chunks.append({"id": cid, "chunk": c["chunk"], "score": sc, "meta": c.get("meta")})
-    return final_chunks
+        scores[cid] = scores.get(cid, 0) + (1 - alpha) * score
+    sorted_chunks = sorted(scores.items(), key=lambda x: -x[1])[:top_n]
+    return [cid for cid, _ in sorted_chunks]
 
-# =====================================
-# Generation functions
-# =====================================
-def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
-    """Use local HF pipeline (seq2seq or causal)"""
-    if hf_pipeline is None:
-        return "Local model unavailable", False
+# ===============================
+# 2.5 Response Generation
 
-    context = "\n".join([c["chunk"] for c in retrieved_chunks])
+# Use a small, open-source generative model (e.g., DistilGPT2, GPT-2 Small, Llama-2 7B if available).
+# Concatenate retrieved passages and user query as input to generate the final answer.
+# Limit total input tokens to the model context window.
+## PreRequisites:
+# Install transformers, sentence-transformers, and faiss-cpu
+## Llama must be instlled and running (llama3.2:latest)
+# ===============================
+def generate_response(user_query, retrieved_chunks, model_name='llama3.2:latest'):
+    context = "\n".join([c['chunk'] for c in retrieved_chunks])
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
+
+    payload = {
+        "model": model_name,
+        "prompt": prompt,
+        "options": {"num_predict": 128}
+    }
+
     try:
-        # Different pipeline types return different fields; normalize
-        out = hf_pipeline(prompt, max_new_tokens=max_new_tokens)
-        if isinstance(out, list):
-            # text2text-generation returns [{"generated_text": "..."}]
-            txt = out[0].get("generated_text") or out[0].get("generated_text") or str(out[0])
-        else:
-            txt = str(out)
-        return txt.strip(), True
-    except Exception as e:
-        return f"Local generation error: {e}", False
+        response = requests.post("http://localhost:11434/api/generate", json=payload)
+        response.raise_for_status()
 
-def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-70b-versatile", max_tokens=256, temperature=0.1):
-    """Use Groq client if available."""
-    client = groq_client
-    if client is None:
-        return "Groq client not configured", False
-    context = "\n".join([c["chunk"] for c in retrieved_chunks])
+        output_text = ""
+        for line in response.iter_lines():
+            if line:
+                data = line.decode("utf-8")
+                if '"response"' in data:
+                    chunk = data.split('"response":"')[-1].split('"')[0]
+                    output_text += chunk
+
+        return output_text.strip()
+
+    except requests.exceptions.RequestException as e:
+        return f"Error: {e}"
+### ===============================
+# 2.5 Response Generation for Groq
+# Use Groq API to generate responses
+# Ensure Groq API is set up and running
+# ===============================
+def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-70b-versatile"):
+    # Build context from retrieved chunks
+    #client = groq_client Check
+    context = "\n".join([c['chunk'] for c in retrieved_chunks])
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
+
     try:
         response = client.chat.completions.create(
             model=model_name,
@@ -315,147 +225,200 @@ def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-7
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
             ],
-            max_tokens=max_tokens,
-            temperature=temperature
+            max_tokens=256,   # limit the answer length
+            temperature=0.1   # controls creativity
         )
-        # groq SDK may return choices structure; adapt defensively
-        txt = ""
-        try:
-            txt = response.choices[0].message.content.strip()
-        except Exception:
-            # Another fallback format:
-            txt = str(response)
-        return txt, True
-    except Exception as e:
-        return f"Groq call failed: {e}", False
 
-# =====================================
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f" Groq API call failed: {e}")
+        return ""
+# ===============================
 # Guardrails
-# =====================================
+# 2.6 Guardrail Implementation
+
+# Implement one guardrail:
+# Input-side: Validate queries to filter out irrelevant or harmful inputs.
+# Output-side: Filter or flag hallucinated or non-factual outputs.
+# =============================
 def is_query_valid(query):
-    if not query or len(query.strip()) < 3:
+    if not query or len(query.strip()) < 5:
         return False, "Query too short or empty."
     lowered = query.lower()
-    if any(b in lowered for b in BANNED_WORDS):
-        return False, "Query contains banned/harmful content."
+    if any(bad in lowered for bad in BANNED_WORDS):
+        return False, "Query contains harmful or banned content."
     return True, ""
 
 def is_output_factual(output):
     lowered = output.lower()
-    if any(p in lowered for p in HALLUCINATION_PHRASES):
+    if any(phrase in lowered for phrase in HALLUCINATION_PHRASES):
         return False
     if len(output.strip()) < 10:
         return False
     return True
 
 # =====================================
-# Streamlit UI - Single consolidated interface
+# Resource loaders (cached)
 # =====================================
-st.set_page_config(page_title="RAG + Fine-tuned QA (No Flask)", layout="wide")
-st.title("RAG & Fine-Tuned QA Interface (Consolidated)")
+@st.cache_resource(show_spinner=False)
+def load_models():
+    global embedder, chunks, chunk_ids, faiss_index, tfidf_vectorizer, tfidf_matrix, qa_pipeline_ft
 
-# Sidebar controls
-with st.sidebar:
-    st.header("Settings")
-    mode = st.radio("Mode", ["RAG", "Fine-Tuned"], index=0)
-    use_groq = st.checkbox("Use Groq for generation (if configured)", value=True)
-    top_n = st.slider("Top N retrieved chunks", 1, 10, 5)
-    alpha = st.slider("Dense/Sparse fusion alpha (dense weight)", 0.0, 1.0, 0.5)
-    max_new_tokens = st.number_input("Max generation tokens", min_value=16, max_value=1024, value=256, step=16)
-    show_chunks = st.checkbox("Show retrieved chunks", value=True)
-    show_memory = st.checkbox("Use memory bank match (threshold 0.9)", value=True)
+    print("Loading models and data...")
 
-# Main UI
-query = st.text_area("Enter your question:", height=150)
-submit = st.button("Ask")
+    # Embedding model
+    embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
-if submit:
-    valid, reason = is_query_valid(query)
+    # Data
+    with open(CHUNKS_PATH, 'r') as f:
+        chunks = json.load(f)
+    chunk_ids = [c['id'] for c in chunks]
+    faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+    tfidf_vectorizer = joblib.load(TFIDF_VECTORIZER_PATH)
+    tfidf_matrix = tfidf_vectorizer.transform([c['chunk'] for c in chunks])
+
+    # Fine-tuned QA model (seq2seq)
+    hf_token = get_hf_token()
+    cfg = AutoConfig.from_pretrained(FINETUNED_MODEL_PATH, use_auth_token=hf_token)
+    tokenizer_ft = AutoTokenizer.from_pretrained(FINETUNED_MODEL_PATH, use_auth_token=hf_token)
+    model_ft = AutoModelForSeq2SeqLM.from_pretrained(
+        FINETUNED_MODEL_PATH,
+        use_auth_token=hf_token,
+        torch_dtype=torch.float32,
+        low_cpu_mem_usage=False,
+        device_map=None
+    )
+    qa_pipeline_ft = pipeline(
+        "text2text-generation",
+        model=model_ft,
+        tokenizer=tokenizer_ft,
+        device=-1
+    )
+    print("Fine-tuned model loaded successfully.")
+    print(qa_pipeline_ft("What was SAP's cloud revenue in 2023?", max_new_tokens=64))
+    print("All models loaded successfully.")
+
+def ask(user_query, mode):
+    valid, reason = is_query_valid(user_query)
     if not valid:
-        st.error(f"Invalid query: {reason}")
+        return jsonify({'error': f'Invalid query: {reason}'}), 400
+    start_time = time.time()
+    if mode == "fine-tuned":
+        print("Using fine-tuned model for query:", user_query)
+        try:
+            answer = qa_pipeline_ft(f"{user_query}", max_new_tokens=256)[0]["generated_text"]
+            print("Fine-tuned model answer:", answer)
+        except Exception as e:
+            print(f"Error in fine-tuned model inference: {e}")
+            return jsonify({'error': f'Fine-tuned model error: {str(e)}'}), 500
+        # Confidence: similarity between query and most relevant FAISS chunk
+        query_proc = preprocess(user_query)
+        dense = dense_retrieve(query_proc, top_n=1)
+        max_sim = dense[0][1] if dense else 0
+
+
+        factual = is_output_factual(answer)
+        elapsed_time = round(time.time() - start_time, 3)
+        if max_sim < FT_SCOPE_SIM_THRESHOLD or not factual:
+            return jsonify({
+                'answer': "Data not in scope",
+                'confidence_score': round(float(max_sim), 3),
+                'retrieved_time': elapsed_time,
+                'source': 'fine_tuned_model'
+            })
+
+        save_to_memory_bank(user_query, answer)
+        return jsonify({
+            'answer': answer,
+            'confidence_score': round(float(max_sim), 3),
+            'retrieved_time': elapsed_time,
+            'source': 'fine_tuned_model'
+        })
+
+    elif mode == "rag":
+        query_proc = preprocess(user_query)
+        dense = dense_retrieve(query_proc)
+        sparse = sparse_retrieve(query_proc)
+        combined_ids = combine_results(dense, sparse)
+
+        # Compute max similarity from dense retrieval for confidence
+        max_sim = max([score for _, score in dense]) if dense else 0
+
+        retrieved_chunks = [c for cid in combined_ids for c in chunks if c['id'] == cid]
+
+        # llm_output = generate_response(user_query, retrieved_chunks)
+        llm_output = generate_response_groq(user_query, retrieved_chunks)
+        factual = is_output_factual(llm_output)
+        elapsed_time = round(time.time() - start_time, 3)
+
+        if max_sim < RAG_SCOPE_SIM_THRESHOLD or not factual:
+            return jsonify({
+                'answer': "Data not in scope",
+                'confidence_score': round(float(max_sim), 3),
+                'retrieved_time': elapsed_time,
+                'source': 'rag_generated'
+            })
+
+        save_to_memory_bank(user_query, llm_output)
+        return jsonify({
+            'answer': llm_output,
+            'confidence_score': round(float(max_sim), 3),
+            'retrieved_time': elapsed_time,
+            'source': 'rag_generated',
+            'chunks': retrieved_chunks
+        })
+
+# ===============================
+# App (Front End UX)
+# ===============================
+# 2.8 Interface Development
+
+# Build a user interface (Streamlit, Gradio, CLI, or GUI).
+## Streamlit is used in main/app.py
+# ===============================
+
+
+st.title("RAG & Fine-Tuned QA Interface")
+
+# Add stable keys for widgets
+mode = st.radio("Select Mode", ["RAG", "Fine-Tuned"], key="mode_selector")
+user_query = st.text_area("Enter your question:", key="user_query")
+
+if st.button("Ask", key="ask_button"):
+    api_url = "http://localhost:5050/ask"
+    payload = {"query": user_query, "mode": mode.lower()}
+
+    try:
+        start = time.time()
+        data = ask(user_query, mode.lower())
+        client_elapsed = time.time() - start  # client-side total request time
+
+        st.markdown(f"**Answer:** {data.get('answer', '')}")
+        st.markdown(f"**Method:** {data.get('source', '')}")
+                        # Show numeric confidence score from API
+        if "confidence_score" in data:
+            st.markdown(f"**Confidence Score:** {data['confidence_score']:.3f} (0 = low, 1 = high)")
+
+        # Show elapsed time returned by API (server-side)
+        if "retrieved_time" in data:
+            st.markdown(f"**Server Retrieval Time:** {data['retrieved_time']:.3f} seconds")
+
+        # Show total client request time
+        st.markdown(f"**Total Response Time:** {client_elapsed:.3f} seconds")
+            
+        if "factual" in data:
+            st.markdown(f"**Factual:** {data['factual']}")
+
+        # Show retrieved chunks only if in RAG mode
+        if "chunks" in data:
+            st.markdown("**Retrieved Chunks:**")
+            st.json(data['chunks'])
+
+
+
     else:
-        # Check memory bank first (optional)
-        mem_ans = None
-        if show_memory:
-            mem_ans = memory_bank_match(query, threshold=0.9)
-        if mem_ans:
-            st.success("Answer from memory bank:")
-            st.write(mem_ans)
-        else:
-            start_time = time.time()
+            st.error(f"Error: error")
 
-            # Preprocess for retrieval
-            q_proc = preprocess(query)
+    except Exception as e:
+        st.error(f"Request failed: {e}")
 
-            # Dense + sparse retrieval
-            dense = dense_retrieve(q_proc, top_n=top_n)
-            sparse = sparse_retrieve(q_proc, top_n=top_n)
-            combined = combine_results(dense, sparse, top_n=top_n, alpha=alpha)
-
-            # If combined empty, fallback to top sparse or dense
-            if not combined:
-                # fallback to sparse results text
-                if sparse:
-                    combined = []
-                    for cid, sc in sparse[:top_n]:
-                        c = next((c for c in chunks if c["id"] == cid), None)
-                        if c:
-                            combined.append({"id": cid, "chunk": c["chunk"], "score": sc})
-                elif dense:
-                    combined = []
-                    for cid, sc in dense[:top_n]:
-                        c = next((c for c in chunks if c["id"] == cid), None)
-                        if c:
-                            combined.append({"id": cid, "chunk": c["chunk"], "score": sc})
-
-            # Generate answer
-            #if use_groq:
-            if mode == "RAG":
-                out_text, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
-            else:
-                out_text, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
-
-            # Post-filtering guardrails
-            factual = is_output_factual(out_text) if ok else False
-            elapsed = time.time() - start_time
-
-            # Compute confidence from retrieval scores (use highest dense score or sparse as proxy)
-            max_sim = 0.0
-            if dense:
-                max_sim = max([s for _, s in dense]) if dense else 0.0
-            elif sparse:
-                max_sim = max([s for _, s in sparse]) if sparse else 0.0
-
-            # If low similarity or not factual flag, indicate out-of-scope
-            if max_sim < (RAG_SCOPE_SIM_THRESHOLD if mode.lower() == "rag" else FT_SCOPE_SIM_THRESHOLD) or not factual:
-                st.warning("Answer may be out of scope or non-factual.")
-                # still show the model output but flag it
-                st.markdown("**Model output (flagged):**")
-                st.write(out_text)
-                st.write(f"Confidence (retrieval sim proxy): {max_sim:.3f}")
-                st.write(f"Elapsed time: {elapsed:.3f}s")
-            else:
-                st.success("Answer (generated):")
-                st.write(out_text)
-                st.write(f"Confidence (retrieval sim proxy): {max_sim:.3f}")
-                st.write(f"Elapsed time: {elapsed:.3f}s")
-
-            # Show retrieved chunks if requested
-            if show_chunks:
-                st.subheader("Retrieved Chunks")
-                st.json(combined)
-
-            # Save to memory bank (async-like behavior is not possible; we save synchronously)
-            try:
-                save_to_memory_bank(query, out_text)
-            except Exception:
-                pass
-
-# Footer: small diagnostics / helpful info
-st.sidebar.markdown("---")
-st.sidebar.markdown("Model source:")
-st.sidebar.markdown(f"`{finetuned.get('source') if finetuned else 'None'}`")
-st.sidebar.markdown("FAISS index:")
-st.sidebar.markdown(f"`{FAISS_INDEX_PATH}`" if faiss_index is not None else "Not loaded")
-st.sidebar.markdown("TF-IDF vectorizer:")
-st.sidebar.markdown(f"`{TFIDF_VECTORIZER_PATH}`" if tfidf_vectorizer is not None else "Not loaded")
