@@ -310,7 +310,7 @@ def ask(user_query, mode):
             print("Fine-tuned model answer:", answer)
         except Exception as e:
             print(f"Error in fine-tuned model inference: {e}")
-            return Error in fine-tuned model inference: {e}
+            return "Error in fine-tuned model inference: {e}"
         # Confidence: similarity between query and most relevant FAISS chunk
         query_proc = preprocess(user_query)
         dense = dense_retrieve(query_proc, top_n=1)
