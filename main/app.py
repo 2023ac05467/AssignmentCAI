@@ -398,8 +398,8 @@ if st.button("Ask", key="ask_button"):
         client_elapsed = time.time() - start  # client-side total request time
         #st.write("API Key:", api_key is not None)
         st.write("Returned User Query:", user_query)
-        st.markdown(f"**Answer:** {data["answer"]}")
-        st.markdown(f"**Method:** {data["source"]}")
+        st.markdown(f"**Answer:** {data['answer']}")
+        st.markdown(f"**Method:** {data['source']}")
                         # Show numeric confidence score from API
         if "confidence_score" in data:
             st.markdown(f"**Confidence Score:** {data['confidence_score']:.3f} (0 = low, 1 = high)")
