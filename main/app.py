@@ -301,7 +301,7 @@ def load_models():
 def ask(user_query, mode):
     valid, reason = is_query_valid(user_query)
     if not valid:
-        return jsonify({'error': f'Invalid query: {reason}'}), 400
+        return reason
     start_time = time.time()
     if mode == "fine-tuned":
         print("Using fine-tuned model for query:", user_query)
@@ -310,7 +310,7 @@ def ask(user_query, mode):
             print("Fine-tuned model answer:", answer)
         except Exception as e:
             print(f"Error in fine-tuned model inference: {e}")
-            return jsonify({'error': f'Fine-tuned model error: {str(e)}'}), 500
+            return Error in fine-tuned model inference: {e}
         # Confidence: similarity between query and most relevant FAISS chunk
         query_proc = preprocess(user_query)
         dense = dense_retrieve(query_proc, top_n=1)
@@ -352,7 +352,7 @@ def ask(user_query, mode):
         elapsed_time = round(time.time() - start_time, 3)
 
         if max_sim < RAG_SCOPE_SIM_THRESHOLD or not factual:
-            return jsonify({
+            return st.json({
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
@@ -360,7 +360,7 @@ def ask(user_query, mode):
             })
 
         save_to_memory_bank(user_query, llm_output)
-        return jsonify({
+        return st.json({
             'answer': llm_output,
             'confidence_score': round(float(max_sim), 3),
             'retrieved_time': elapsed_time,
