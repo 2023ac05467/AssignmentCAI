@@ -384,7 +384,7 @@ if submit:
             st.success("Answer from memory bank:")
             st.write(mem_ans)
         else:
-            start_time = time.time()
+            
 
             # Preprocess for retrieval
             q_proc = preprocess(query)
@@ -411,16 +411,17 @@ if submit:
                             combined.append({"id": cid, "chunk": c["chunk"], "score": sc})
 
             # Generate answer
+            start_time = time.time()
             #if use_groq:
             if mode == "RAG":
                 out_text, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
             else:
                 out_text, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
 
+            elapsed = time.time() - start_time
             # Post-filtering guardrails
             factual = is_output_factual(out_text) if ok else False
-            elapsed = time.time() - start_time
-
+            
             # Compute confidence from retrieval scores (use highest dense score or sparse as proxy)
             max_sim = 0.0
             if dense:
