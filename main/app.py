@@ -320,7 +320,7 @@ def ask(user_query, mode):
         factual = is_output_factual(answer)
         elapsed_time = round(time.time() - start_time, 3)
         if max_sim < FT_SCOPE_SIM_THRESHOLD or not factual:
-            return jsonify({
+            return st.json({
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
@@ -328,7 +328,7 @@ def ask(user_query, mode):
             })
 
         save_to_memory_bank(user_query, answer)
-        return jsonify({
+        return st.json({
             'answer': answer,
             'confidence_score': round(float(max_sim), 3),
             'retrieved_time': elapsed_time,
