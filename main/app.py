@@ -294,14 +294,14 @@ def load_models():
         tokenizer=tokenizer_ft,
         device=-1
     )
-    st.write("Fine-tuned model loaded successfully.")
-    st.write(qa_pipeline_ft("What was SAP's cloud revenue in 2023?", max_new_tokens=64))
-    st.write("All models loaded successfully.")
+    print("Fine-tuned model loaded successfully.")
+    print(qa_pipeline_ft("What was SAP's cloud revenue in 2023?", max_new_tokens=64))
+    print("All models loaded successfully.")
 
 def ask(user_query, mode):
     valid, reason = is_query_valid(user_query)
     if not valid:
-        return reason
+        return jsonify({'error': f'Invalid query: {reason}'}), 400
     start_time = time.time()
     if mode == "fine-tuned":
         print("Using fine-tuned model for query:", user_query)
@@ -310,7 +310,7 @@ def ask(user_query, mode):
             print("Fine-tuned model answer:", answer)
         except Exception as e:
             print(f"Error in fine-tuned model inference: {e}")
-            return "Error in fine-tuned model inference: {e}"
+            return jsonify({'error': f'Fine-tuned model error: {str(e)}'}), 500
         # Confidence: similarity between query and most relevant FAISS chunk
         query_proc = preprocess(user_query)
         dense = dense_retrieve(query_proc, top_n=1)
@@ -324,8 +324,7 @@ def ask(user_query, mode):
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
-                'source': 'fine_tuned_model',
-                'chunks': ''
+                'source': 'fine_tuned_model'
             }
 
         save_to_memory_bank(user_query, answer)
@@ -333,8 +332,7 @@ def ask(user_query, mode):
             'answer': answer,
             'confidence_score': round(float(max_sim), 3),
             'retrieved_time': elapsed_time,
-            'source': 'fine_tuned_model',
-            'chunks': ''
+            'source': 'fine_tuned_model'
         }
 
     elif mode == "rag":
@@ -358,8 +356,7 @@ def ask(user_query, mode):
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
-                'source': 'rag_generated',
-                'chunks': ''
+                'source': 'rag_generated'
             }
 
         save_to_memory_bank(user_query, llm_output)
@@ -393,13 +390,11 @@ if st.button("Ask", key="ask_button"):
 
     try:
         start = time.time()
-        st.write("Got User Query:", user_query)
         data = ask(user_query, mode.lower())
         client_elapsed = time.time() - start  # client-side total request time
-        #st.write("API Key:", api_key is not None)
-        st.write("Returned User Query:", data)
-        st.markdown(f"**Answer:** {data[1]}")
-        st.markdown(f"**Method:** {data['source']}")
+
+        st.markdown(f"**Answer:** {data.get('answer', '')}")
+        st.markdown(f"**Method:** {data.get('source', '')}")
                         # Show numeric confidence score from API
         if "confidence_score" in data:
             st.markdown(f"**Confidence Score:** {data['confidence_score']:.3f} (0 = low, 1 = high)")
@@ -418,6 +413,11 @@ if st.button("Ask", key="ask_button"):
         if "chunks" in data:
             st.markdown("**Retrieved Chunks:**")
             st.json(data['chunks'])
+
+
+
+    else:
+            st.error(f"Error: error")
 
     except Exception as e:
         st.error(f"Request failed: {e}")
