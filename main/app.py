@@ -414,11 +414,6 @@ if st.button("Ask", key="ask_button"):
             st.markdown("**Retrieved Chunks:**")
             st.json(data['chunks'])
 
-
-
-    else:
-            st.error(f"Error: error")
-
     except Exception as e:
         st.error(f"Request failed: {e}")
 
