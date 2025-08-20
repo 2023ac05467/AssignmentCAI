@@ -320,20 +320,22 @@ def ask(user_query, mode):
         factual = is_output_factual(answer)
         elapsed_time = round(time.time() - start_time, 3)
         if max_sim < FT_SCOPE_SIM_THRESHOLD or not factual:
-            return st.json({
+            return {
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
-                'source': 'fine_tuned_model'
-            })
+                'source': 'fine_tuned_model',
+                'chunks': ''
+            }
 
         save_to_memory_bank(user_query, answer)
-        return st.json({
+        return {
             'answer': answer,
             'confidence_score': round(float(max_sim), 3),
             'retrieved_time': elapsed_time,
-            'source': 'fine_tuned_model'
-        })
+            'source': 'fine_tuned_model',
+            'chunks': ''
+        }
 
     elif mode == "rag":
         query_proc = preprocess(user_query)
@@ -352,21 +354,22 @@ def ask(user_query, mode):
         elapsed_time = round(time.time() - start_time, 3)
 
         if max_sim < RAG_SCOPE_SIM_THRESHOLD or not factual:
-            return st.json({
+            return {
                 'answer': "Data not in scope",
                 'confidence_score': round(float(max_sim), 3),
                 'retrieved_time': elapsed_time,
-                'source': 'rag_generated'
-            })
+                'source': 'rag_generated',
+                'chunks': ''
+            }
 
         save_to_memory_bank(user_query, llm_output)
-        return st.json({
+        return {
             'answer': llm_output,
             'confidence_score': round(float(max_sim), 3),
             'retrieved_time': elapsed_time,
             'source': 'rag_generated',
             'chunks': retrieved_chunks
-        })
+        }
 
 # ===============================
 # App (Front End UX)
@@ -390,12 +393,13 @@ if st.button("Ask", key="ask_button"):
 
     try:
         start = time.time()
+        st.write("Got User Query:", user_query)
         data = ask(user_query, mode.lower())
         client_elapsed = time.time() - start  # client-side total request time
         #st.write("API Key:", api_key is not None)
-        st.write("User Query:", user_query)
-        st.markdown(f"**Answer:** {data.get('answer', '')}")
-        st.markdown(f"**Method:** {data.get('source', '')}")
+        st.write("Returned User Query:", user_query)
+        st.markdown(f"**Answer:** {data["answer"]}")
+        st.markdown(f"**Method:** {data["source"]}")
                         # Show numeric confidence score from API
         if "confidence_score" in data:
             st.markdown(f"**Confidence Score:** {data['confidence_score']:.3f} (0 = low, 1 = high)")
