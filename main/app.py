@@ -292,15 +292,17 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
     try:
         # Different pipeline types return different fields; normalize
+        start_time = time.time()
         out = hf_pipeline(prompt, max_new_tokens=max_new_tokens)
+        elapsed_time = time.time() - start_time
         if isinstance(out, list):
             # text2text-generation returns [{"generated_text": "..."}]
             txt = out[0].get("generated_text") or out[0].get("generated_text") or str(out[0])
         else:
             txt = str(out)
-        return txt.strip(), True
+        return txt.strip(), elapsed_time, True
     except Exception as e:
-        return f"Local generation error: {e}", False
+        return f"Local generation error: {e}", 0, False
 
 def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-70b-versatile", max_tokens=256, temperature=0.1):
     """Use Groq client if available."""
@@ -310,6 +312,7 @@ def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-7
     context = "\n".join([c["chunk"] for c in retrieved_chunks])
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
     try:
+        start_time = time.time()
         response = client.chat.completions.create(
             model=model_name,
             messages=[
@@ -319,6 +322,7 @@ def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-7
             max_tokens=max_tokens,
             temperature=temperature
         )
+        elapsed_time = time.time() - start_time
         # groq SDK may return choices structure; adapt defensively
         txt = ""
         try:
@@ -326,9 +330,9 @@ def generate_response_groq(user_query, retrieved_chunks, model_name="llama-3.3-7
         except Exception:
             # Another fallback format:
             txt = str(response)
-        return txt, True
+        return txt, elapsed_time, True
     except Exception as e:
-        return f"Groq call failed: {e}", False
+        return f"Groq call failed: {e}", 0, False
 
 # =====================================
 # Guardrails
@@ -414,9 +418,9 @@ if submit:
             start_time = time.time()
             #if use_groq:
             if mode == "RAG":
-                out_text, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
+                out_text, time_server, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
             else:
-                out_text, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
+                out_text, time_server, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
 
             elapsed = time.time() - start_time
             # Post-filtering guardrails
@@ -437,12 +441,13 @@ if submit:
                 st.write(out_text)
                 st.write(f"Confidence (retrieval sim proxy): {max_sim:.3f}")
                 st.write(f"Elapsed time: {elapsed:.3f}s")
+                st.write(f"Inference time: {time_server:.3f}s")
             else:
                 st.success("Answer (generated):")
                 st.write(out_text)
                 st.write(f"Confidence (retrieval sim proxy): {max_sim:.3f}")
                 st.write(f"Elapsed time: {elapsed:.3f}s")
-
+                st.write(f"Inference time: {time_server:.3f}s")
             # Show retrieved chunks if requested
             if show_chunks:
                 st.subheader("Retrieved Chunks")
