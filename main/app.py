@@ -400,7 +400,7 @@ if submit:
             dense = dense_retrieve(q_proc, top_n=top_n)
             sparse = sparse_retrieve(q_proc, top_n=top_n)
             combined = combine_results(dense, sparse, top_n=top_n, alpha=alpha)
-            st.write(combined)
+            #st.write(combined)
             # If combined empty, fallback to top sparse or dense
             if not combined:
                 # fallback to sparse results text
