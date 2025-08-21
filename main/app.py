@@ -290,7 +290,7 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
         return "Local model unavailable", False
 
     context = "\n".join([c["chunk"] for c in retrieved_chunks])
-    #context = "\n"
+    context = ""
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
     
     try:
