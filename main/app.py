@@ -423,6 +423,7 @@ if submit:
             if mode == "RAG":
                 out_text, time_server, ok = generate_response_groq(query, combined, max_tokens=max_new_tokens)
             else:
+                show_chunks = False
                 out_text, time_server, ok = generate_response_local(query, combined, max_new_tokens=max_new_tokens)
 
             elapsed = time.time() - start_time
@@ -452,7 +453,7 @@ if submit:
                 st.write(f"Elapsed time: {elapsed:.3f}s")
                 st.write(f"Inference time: {time_server:.3f}s")
             # Show retrieved chunks if requested
-            if show_chunks:
+            if show_chunks and mode == "RAG":
                 st.subheader("Retrieved Chunks")
                 st.json(combined)
 
