@@ -289,7 +289,7 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
     if hf_pipeline is None:
         return "Local model unavailable", False
 
-    #context = "\n".join([c["chunk"] for c in retrieved_chunks])
+    context = "\n".join([c["chunk"] for c in retrieved_chunks])
     context = "\n"
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
     
