@@ -289,7 +289,7 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
     if hf_pipeline is None:
         return "Local model unavailable", False
 
-    context = "\n".join([c["chunk"] for c in retrieved_chunks])
+    #context = "\n".join([c["chunk"] for c in retrieved_chunks])
     context = ""
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
     
@@ -443,7 +443,7 @@ if submit:
                 elif sparse:
                     max_sim = sparse[0][1]
                 
-            st.write(max_sim)
+            #st.write(max_sim)
             
             # If low similarity or not factual flag, indicate out-of-scope
             if max_sim < (RAG_SCOPE_SIM_THRESHOLD if mode.lower() == "rag" else FT_SCOPE_SIM_THRESHOLD) or not factual:
