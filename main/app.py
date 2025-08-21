@@ -436,7 +436,8 @@ if submit:
                 max_sim = max([s for _, s in dense]) if dense else 0.0
             elif sparse:
                 max_sim = max([s for _, s in sparse]) if sparse else 0.0
-
+            st.write(max_sim)
+            
             # If low similarity or not factual flag, indicate out-of-scope
             if max_sim < (RAG_SCOPE_SIM_THRESHOLD if mode.lower() == "rag" else FT_SCOPE_SIM_THRESHOLD) or not factual:
                 st.warning("Answer may be out of scope or non-factual.")
