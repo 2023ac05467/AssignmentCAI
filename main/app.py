@@ -432,11 +432,18 @@ if submit:
             
             # Compute confidence from retrieval scores (use highest dense score or sparse as proxy)
             max_sim = 0.0
-            if dense:
-                max_sim = max([s for _, s in dense]) if dense else 0.0
-            elif sparse:
-                max_sim = max([s for _, s in sparse]) if sparse else 0.0
-            #st.write(max_sim)
+            if mode == "RAG":
+                if dense:
+                    max_sim = max([s for _, s in dense]) if dense else 0.0
+                elif sparse:
+                    max_sim = max([s for _, s in sparse]) if sparse else 0.0
+            else:
+                if dense:
+                    max_sim = dense[0][1] if dense else 0.0
+                elif sparse:
+                    max_sim = sparse[0][1]
+                
+            st.write(max_sim)
             
             # If low similarity or not factual flag, indicate out-of-scope
             if max_sim < (RAG_SCOPE_SIM_THRESHOLD if mode.lower() == "rag" else FT_SCOPE_SIM_THRESHOLD) or not factual:
