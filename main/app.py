@@ -435,7 +435,7 @@ if submit:
             if dense:
                 max_sim = max([s for _, s in dense]) if dense else 0.0
             elif sparse:
-                max_sim = max([s for _, s in dense]) if sparse else 0.0
+                max_sim = max([s for _, s in sparse]) if sparse else 0.0
             st.write(max_sim)
             
             # If low similarity or not factual flag, indicate out-of-scope
