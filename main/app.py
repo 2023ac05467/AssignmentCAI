@@ -183,6 +183,7 @@ if tfidf_vectorizer and chunks:
     tfidf_matrix = tfidf_vectorizer.transform([c["chunk"] for c in chunks])
 
 memory_bank = load_memory_bank()
+
 finetuned = load_finetuned_model()
 hf_pipeline = finetuned.get("pipeline") if finetuned else None
 groq_client = init_groq_client()
@@ -288,8 +289,10 @@ def generate_response_local(user_query, retrieved_chunks, max_new_tokens=128):
     if hf_pipeline is None:
         return "Local model unavailable", False
 
-    context = "\n".join([c["chunk"] for c in retrieved_chunks])
+    #context = "\n".join([c["chunk"] for c in retrieved_chunks])
+    context = "\n"
     prompt = f"{context}\nUser: {user_query}\nAnswer:"
+    
     try:
         # Different pipeline types return different fields; normalize
         start_time = time.time()
