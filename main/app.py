@@ -58,7 +58,7 @@ def get_hf_token():
     return st.secrets.get("HUGGINGFACE", {}).get("TOKEN", None)
 
 def get_groq_key():
-    return "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"
+    return "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"
 #    return st.secrets.get("GROQ", {}).get("API_KEY", "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")
 
 
